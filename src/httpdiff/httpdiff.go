@@ -68,7 +68,7 @@ func main() {
 	}
 
 	exclude := make(map[string]bool)
-	
+
 	if *ignore != "" {
 		h := strings.Split(*ignore, ",")
 
