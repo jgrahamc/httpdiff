@@ -14,15 +14,15 @@ It's also possible to set the Host header to something other than what's in
 the URIs. This is sometimes useful when testing a temporary set up or when
 moving servers.
 
-   httpdiff -host example.com http://example.old.com/ http://example.new.com
+    httpdiff -host example.com http://example.old.com/ http://example.new.com
 
 Specific headers can be ignored with the -ignore option
 
-   httpdiff -ignore Set-Cookie,Date http://x.com http://y.com
+    httpdiff -ignore Set-Cookie,Date http://x.com http://y.com
 
 The default HTTP method is GET but that can be changed
 
-   httpdiff -method HEAD http://example.com http://example2.com
+    httpdiff -method HEAD http://example.com http://example2.com
 
 # Output example
 
