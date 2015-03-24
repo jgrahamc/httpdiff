@@ -136,25 +136,16 @@ func main() {
 
 	var only [2]string
 
-	for h := range resp[0].Header {
-		if exclude[h] {
-			continue
-		}
-		h2 := resp[1].Header[h]
-		if h2 == nil {
-			only[0] += h
-			only[0] += " "
-		}
-	}
-
-	for h := range resp[1].Header {
-		if exclude[h] {
-			continue
-		}
-		h2 := resp[0].Header[h]
-		if h2 == nil {
-			only[1] += h
-			only[1] += " "
+	for i := 0; i < 2; i++ {
+		for h := range resp[i].Header {
+			if exclude[h] {
+				continue
+			}
+			h2 := resp[1-i].Header[h]
+			if h2 == nil {
+				only[i] += h
+				only[i] += " "
+			}
 		}
 	}
 
