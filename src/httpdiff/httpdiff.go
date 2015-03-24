@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -56,10 +57,22 @@ func do(method, host, uri string) (*http.Response, []byte, error) {
 func main() {
 	method := flag.String("method", "GET", "Sets the HTTP method")
 	host := flag.String("host", "", "Sets the Host header")
+	ignore := flag.String("ignore", "",
+		"Comma-separated list of headers to ignore")
 	flag.Parse()
 	if len(flag.Args()) != 2 {
 		fmt.Printf("Must specify two URIs to test\n")
 		return
+	}
+
+	exclude := make(map[string]bool)
+	
+	if *ignore != "" {
+		h := strings.Split(*ignore, ",")
+
+		for i := 0; i < len(h); i++ {
+			exclude[http.CanonicalHeaderKey(h[i])] = true
+		}
 	}
 
 	var wg sync.WaitGroup
@@ -98,6 +111,9 @@ func main() {
 	}
 
 	for h := range resp[0].Header {
+		if exclude[h] {
+			continue
+		}
 		h2 := resp[1].Header[h]
 		if h2 != nil {
 			if len(resp[0].Header[h]) != len(resp[1].Header[h]) {
@@ -118,6 +134,9 @@ func main() {
 
 
 	for h := range resp[0].Header {
+		if exclude[h] {
+			continue
+		}
 		h2 := resp[1].Header[h]
 		if h2 == nil {
 			fmt.Printf("%s has %s header (%s does not)\n", on(0, flag.Arg(0)),
@@ -126,6 +145,9 @@ func main() {
 	}
 
 	for h := range resp[1].Header {
+		if exclude[h] {
+			continue
+		}
 		h2 := resp[0].Header[h]
 		if h2 == nil {
 			fmt.Printf("%s has %s header (%s does not)\n", on(1, flag.Arg(1)),
