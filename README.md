@@ -3,6 +3,8 @@
 Perform the same request against two HTTP servers and diff the results. For
 best results use in a terminal that supports ANSI escape sequences.
 
+
+
 # Usage
 
 Simple usage is two give it two URLs to fetch and it will diff the results. If
@@ -24,6 +26,10 @@ The default HTTP method is GET but that can be changed
 
     httpdiff -method HEAD http://example.com http://example2.com
 
-# Output example
+# Output example on Hacker News showing that Date changes each time
 
 ![HN](doc/example.png "Checking two GETs of HN")
+
+# Output example on Google showing difference between HTTP and HTTPS
+
+![HN](doc/example2.png "HTTP vs. HTTPS")
