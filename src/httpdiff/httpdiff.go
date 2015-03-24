@@ -92,6 +92,11 @@ func main() {
 		return
 	}
 
+	if resp[0].StatusCode != resp[1].StatusCode {
+		fmt.Printf("Different status code: %s\n",
+			vsi(resp[0].StatusCode, resp[1].StatusCode))
+	}
+
 	for h := range resp[0].Header {
 		h2 := resp[1].Header[h]
 		if h2 != nil {
