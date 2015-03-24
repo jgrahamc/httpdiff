@@ -3,7 +3,12 @@
 Perform the same request against two HTTP servers and diff the results. For
 best results use in a terminal that supports ANSI escape sequences.
 
+# Installation
 
+```
+go get github.com/jgrahamc/httpdiff
+go install github.com/jgrahamc/httpdiff
+```
 
 # Usage
 
