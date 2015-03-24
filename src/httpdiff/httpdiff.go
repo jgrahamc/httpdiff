@@ -1,3 +1,6 @@
+// httpdiff: performs two HTTP requests and diffs the responses
+//
+// Copyright (c) 2015 John Graham-Cumming
 package main
 
 import (
@@ -32,7 +35,7 @@ func vsi(a, b int, f string, v ...interface{}) {
 	fmt.Printf("%s\n    %s\n    %s\n", s, oni(0, a), oni(1, b))
 }
 
-// do make an HTTP request to a server and returns the response object and the
+// do an HTTP request to a server and returns the response object and the
 // complete response body. There's no need to close the response body as this
 // will have been done.
 func do(method, host, uri string) (*http.Response, []byte, error) {
@@ -77,16 +80,16 @@ func main() {
 		}
 	}
 
-	var wg sync.WaitGroup
-
 	if *host != "" {
 		fmt.Printf("Set Host to %s; ", green(*host))
 	}
 	vs(flag.Arg(0), flag.Arg(1), "Doing %s: ", green(*method))
 
+	var wg sync.WaitGroup
 	var resp [2]*http.Response
 	var body [2][]byte
 	var err [2]error
+
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go func(i int) {
