@@ -23,11 +23,13 @@ func oni(i, d int) string {
 func green(s string) string {
 	return fmt.Sprintf("\x1b[32m%s\x1b[0m", s)
 }
-func vs(a, b string) string {
-	return fmt.Sprintf("%s vs. %s", on(0, a), on(1, b))
+func vs(a, b string, f string, v ...interface{}) {
+	s := fmt.Sprintf(f, v...)
+	fmt.Printf("%s\n    %s\n    %s\n", s, on(0, a), on(1, b))
 }
-func vsi(a, b int) string {
-	return fmt.Sprintf("%s vs. %s", oni(0, a), oni(1, b))
+func vsi(a, b int, f string, v ...interface{}) {
+	s := fmt.Sprintf(f, v...)
+	fmt.Printf("%s\n    %s\n    %s\n", s, oni(0, a), oni(1, b))
 }
 
 // do make an HTTP request to a server and returns the response object and the
@@ -77,7 +79,10 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	fmt.Printf("Doing %s %s\n", *method, vs(flag.Arg(0), flag.Arg(1)))
+	if *host != "" {
+		fmt.Printf("Set Host to %s; ", green(*host))
+	}
+	vs(flag.Arg(0), flag.Arg(1), "Doing %s: ", green(*method))
 
 	var resp [2]*http.Response
 	var body [2][]byte
@@ -106,8 +111,7 @@ func main() {
 	}
 
 	if resp[0].StatusCode != resp[1].StatusCode {
-		fmt.Printf("Different status code: %s\n",
-			vsi(resp[0].StatusCode, resp[1].StatusCode))
+		vsi(resp[0].StatusCode, resp[1].StatusCode, "Different status code: ")
 	}
 
 	for h := range resp[0].Header {
@@ -117,21 +121,20 @@ func main() {
 		h2 := resp[1].Header[h]
 		if h2 != nil {
 			if len(resp[0].Header[h]) != len(resp[1].Header[h]) {
-				fmt.Printf("Different number of %s headers: %s\n",
-					green(h), vsi(len(resp[0].Header[h]),
-						len(resp[1].Header[h])))
+				vsi(len(resp[0].Header[h]), len(resp[1].Header[h]),
+					"Different number of %s headers: %s", green(h))
 			} else {
 				for i := 0; i < len(resp[0].Header[h]); i++ {
 					if resp[0].Header[h][i] != resp[1].Header[h][i] {
-						fmt.Printf("%s header different %s\n",
-							green(h), vs(resp[0].Header[h][i],
-								resp[1].Header[h][i]))
+						vs(resp[0].Header[h][i], resp[1].Header[h][i],
+							"%s header different:", green(h))
 					}
 				}
 			}
 		}
 	}
 
+	var only [2]string
 
 	for h := range resp[0].Header {
 		if exclude[h] {
@@ -139,8 +142,8 @@ func main() {
 		}
 		h2 := resp[1].Header[h]
 		if h2 == nil {
-			fmt.Printf("%s has %s header (%s does not)\n", on(0, flag.Arg(0)),
-				green(h), on(1, flag.Arg(1)))
+			only[0] += h
+			only[0] += " "
 		}
 	}
 
@@ -150,14 +153,23 @@ func main() {
 		}
 		h2 := resp[0].Header[h]
 		if h2 == nil {
-			fmt.Printf("%s has %s header (%s does not)\n", on(1, flag.Arg(1)),
-				green(h), on(0, flag.Arg(0)))
+			only[1] += h
+			only[1] += " "
+		}
+	}
+
+	if only[0] != "" || only[1] != "" {
+		fmt.Printf("Unique headers\n")
+		for i := 0; i < 2; i++ {
+			if only[i] != "" {
+				fmt.Printf("    %s\n", on(i, only[i]))
+			}
 		}
 	}
 
 	dump := false
 	if len(body[0]) != len(body[1]) {
-		fmt.Printf("Body lengths differ: %s\n",	vsi(len(body[0]), len(body[1])))
+		vsi(len(body[0]), len(body[1]), "Body lengths differ:")
 		dump = true
 	} else {
 		if md5.Sum(body[0]) != md5.Sum(body[1]) {
@@ -181,7 +193,7 @@ func main() {
 				fmt.Printf("Error writing temporary file: %s\n", e)
 				return
 			}
-			fmt.Printf("  Wrote body of %s to %s\n", on(i, flag.Arg(i)),
+			fmt.Printf("    Wrote body of %s to %s\n", on(i, flag.Arg(i)),
 				on(i, temp[i].Name()))
 		}
 	}
