@@ -14,37 +14,58 @@ import (
 	"sync"
 )
 
+// Set to true to prevent colour output
+
+var mono = false
+
 var client = &http.Client{}
 
 // ANSI escape functions and print helpers
 func on(i int, s string) string {
-	return fmt.Sprintf("\x1b[3%dm%s\x1b[0m", i*3+1, s)
+	if mono {
+		return fmt.Sprintf("%d: %s", i+1, s)
+	} else {
+		return fmt.Sprintf("\x1b[3%dm%s\x1b[0m", i*3+1, s)
+	}
 }
 func oni(i, d int) string {
 	return on(i, fmt.Sprintf("%d", d))
 }
 func green(s string) string {
-	return fmt.Sprintf("\x1b[32m%s\x1b[0m", s)
+	if mono {
+		return fmt.Sprintf("'%s'", s)
+	} else {
+		return fmt.Sprintf("\x1b[32m%s\x1b[0m", s)
+	}
 }
-func vs(a, b string, f string, v ...interface{}) {
-	s := fmt.Sprintf(f, v...)
-	fmt.Printf("%s\n    %s\n    %s\n", s, on(0, a), on(1, b))
+func vs(a, b string, f string, v ...interface{}) bool {
+	if a != b {
+		s := fmt.Sprintf(f, v...)
+		fmt.Printf("%s\n    %s\n    %s\n", s, on(0, a), on(1, b))
+	}
+	return a != b
 }
-func vsi(a, b int, f string, v ...interface{}) {
-	s := fmt.Sprintf(f, v...)
-	fmt.Printf("%s\n    %s\n    %s\n", s, oni(0, a), oni(1, b))
+func vsi(a, b int, f string, v ...interface{}) bool {
+	if a != b {
+		s := fmt.Sprintf(f, v...)
+		fmt.Printf("%s\n    %s\n    %s\n", s, oni(0, a), oni(1, b))
+	}
+	return a != b
 }
 
 // do an HTTP request to a server and returns the response object and the
 // complete response body. There's no need to close the response body as this
 // will have been done.
-func do(method, host, uri string) (*http.Response, []byte, error) {
+func do(method, host, ua, uri string) (*http.Response, []byte, error) {
 	req, err := http.NewRequest(method, uri, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 	if host != "" {
 		req.Host = host
+	}
+	if ua != "" {
+		req.Header["User-Agent"] = []string{ua}
 	}
 
 	resp, err := client.Do(req)
@@ -61,12 +82,23 @@ func do(method, host, uri string) (*http.Response, []byte, error) {
 
 func main() {
 	method := flag.String("method", "GET", "Sets the HTTP method")
-	host := flag.String("host", "", "Sets the Host header")
+	host := flag.String("host", "",
+		"Sets the Host header sent with both requests")
 	ignore := flag.String("ignore", "",
 		"Comma-separated list of headers to ignore")
+	flag.BoolVar(&mono, "mono", false, "Monochrome output")
+	ua := flag.String("agent", "httpdiff/0.1", "Sets User-Agent")
+	help := flag.Bool("help", false, "Print usage")
 	flag.Parse()
+
+	if *help {
+		fmt.Fprintf(os.Stderr, "httpdiff [options] url1 url2\n")
+		flag.PrintDefaults()
+		return
+	}
+
 	if len(flag.Args()) != 2 {
-		fmt.Printf("Must specify two URIs to test\n")
+		fmt.Printf("Must specify two URLs to test\n")
 		return
 	}
 
@@ -83,7 +115,7 @@ func main() {
 	if *host != "" {
 		fmt.Printf("Set Host to %s; ", green(*host))
 	}
-	vs(flag.Arg(0), flag.Arg(1), "Doing %s: ", green(*method))
+	vs(flag.Arg(0), flag.Arg(1)+" ", "Doing %s: ", green(*method))
 
 	var wg sync.WaitGroup
 	var resp [2]*http.Response
@@ -93,7 +125,7 @@ func main() {
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go func(i int) {
-			resp[i], body[i], err[i] = do(*method, *host, flag.Arg(i))
+			resp[i], body[i], err[i] = do(*method, *host, *ua, flag.Arg(i))
 			wg.Done()
 		}(i)
 	}
@@ -113,26 +145,22 @@ func main() {
 		return
 	}
 
-	if resp[0].StatusCode != resp[1].StatusCode {
-		vsi(resp[0].StatusCode, resp[1].StatusCode, "Different status code: ")
-	}
+	vsi(resp[0].StatusCode, resp[1].StatusCode, "Different status code: ")
 
 	for h := range resp[0].Header {
 		if exclude[h] {
 			continue
 		}
 		h2 := resp[1].Header[h]
-		if h2 != nil {
-			if len(resp[0].Header[h]) != len(resp[1].Header[h]) {
-				vsi(len(resp[0].Header[h]), len(resp[1].Header[h]),
-					"Different number of %s headers: %s", green(h))
-			} else {
-				for i := 0; i < len(resp[0].Header[h]); i++ {
-					if resp[0].Header[h][i] != resp[1].Header[h][i] {
-						vs(resp[0].Header[h][i], resp[1].Header[h][i],
-							"%s header different:", green(h))
-					}
-				}
+		if h2 == nil {
+			continue
+		}
+
+		if !vsi(len(resp[0].Header[h]), len(resp[1].Header[h]),
+			"Different number of %s headers:", green(h)) {
+			for i := 0; i < len(resp[0].Header[h]); i++ {
+				vs(resp[0].Header[h][i], resp[1].Header[h][i],
+					"%s header different:", green(h))
 			}
 		}
 	}
@@ -162,8 +190,7 @@ func main() {
 	}
 
 	dump := false
-	if len(body[0]) != len(body[1]) {
-		vsi(len(body[0]), len(body[1]), "Body lengths differ:")
+	if vsi(len(body[0]), len(body[1]), "Body lengths differ:") {
 		dump = true
 	} else {
 		if sha256.Sum256(body[0]) != sha256.Sum256(body[1]) {
