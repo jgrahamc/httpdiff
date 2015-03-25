@@ -15,7 +15,6 @@ import (
 )
 
 // Set to true to prevent colour output
-
 var mono = false
 
 var client = &http.Client{}
@@ -24,9 +23,8 @@ var client = &http.Client{}
 func on(i int, s string) string {
 	if mono {
 		return fmt.Sprintf("%d: %s", i+1, s)
-	} else {
-		return fmt.Sprintf("\x1b[3%dm%s\x1b[0m", i*3+1, s)
 	}
+	return fmt.Sprintf("\x1b[3%dm%s\x1b[0m", i*3+1, s)
 }
 func oni(i, d int) string {
 	return on(i, fmt.Sprintf("%d", d))
@@ -34,9 +32,8 @@ func oni(i, d int) string {
 func green(s string) string {
 	if mono {
 		return fmt.Sprintf("'%s'", s)
-	} else {
-		return fmt.Sprintf("\x1b[32m%s\x1b[0m", s)
 	}
+	return fmt.Sprintf("\x1b[32m%s\x1b[0m", s)
 }
 func vs(a, b string, f string, v ...interface{}) bool {
 	if a != b {
