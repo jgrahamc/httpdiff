@@ -4,7 +4,7 @@
 package main
 
 import (
-	"crypto/md5"
+	"crypto/sha256"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -166,7 +166,7 @@ func main() {
 		vsi(len(body[0]), len(body[1]), "Body lengths differ:")
 		dump = true
 	} else {
-		if md5.Sum(body[0]) != md5.Sum(body[1]) {
+		if sha256.Sum256(body[0]) != sha256.Sum256(body[1]) {
 			fmt.Printf("Bodies are different\n")
 			dump = true
 		}
