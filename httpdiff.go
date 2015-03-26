@@ -4,7 +4,7 @@
 package main
 
 import (
-	"crypto/sha256"
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -190,7 +190,7 @@ func main() {
 	if vsi(len(body[0]), len(body[1]), "Body lengths differ:") {
 		dump = true
 	} else {
-		if sha256.Sum256(body[0]) != sha256.Sum256(body[1]) {
+		if !bytes.Equal(body[0], body[1]) {
 			fmt.Printf("Bodies are different\n")
 			dump = true
 		}
