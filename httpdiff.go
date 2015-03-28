@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 )
@@ -86,6 +87,7 @@ func main() {
 	flag.BoolVar(&mono, "mono", false, "Monochrome output")
 	ua := flag.String("agent", "httpdiff/0.1", "Sets User-Agent")
 	help := flag.Bool("help", false, "Print usage")
+	diffapp := flag.String("diffapp", "", "The diff application to call when response bodies are different")
 	flag.Parse()
 
 	if *help {
@@ -213,6 +215,15 @@ func main() {
 			}
 			fmt.Printf("    Wrote body of %s to %s\n", on(i, flag.Arg(i)),
 				on(i, temp[i].Name()))
+		}
+
+		if *diffapp != "" {
+			cmd := exec.Command(*diffapp, temp[0].Name(), temp[1].Name())
+			out, err := cmd.Output()
+			if err != nil {
+				fmt.Printf("Diff program ended with: %s\n", err)
+			}
+			fmt.Printf("%s\n", out)
 		}
 	}
 }
