@@ -24,3 +24,6 @@ _testmain.go
 *.prof
 
 httpdiff
+
+# The version of docker on circleci does not currently support -f.
+Dockerfile

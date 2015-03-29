@@ -1,0 +1,14 @@
+# https://circleci.com/docs/docker
+machine:
+  services:
+    - docker
+
+dependencies:
+  override:
+    - docker info
+    - ./make runtime
+    - docker images
+
+test:
+  override:
+    - ./make test

@@ -5,9 +5,24 @@ best results use in a terminal that supports ANSI escape sequences.
 
 # Installation
 
+If you have a full development environment:
+
 ```
 go get github.com/jgrahamc/httpdiff
 go install github.com/jgrahamc/httpdiff
+```
+
+If you are on a minimal host, such as CoreOS:
+
+```
+# Build the smallest possible docker image that
+# contains a static binary and nothing else.
+git clone https://github.com/jgrahamc/httpdiff.git
+cd httpdiff
+./make runtime
+
+# Add this line to your shell init file (e.g., .bashrc).
+alias httpdiff="docker run --rm -it -v /tmp:/tmp httpdiff"
 ```
 
 # Usage

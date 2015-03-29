@@ -5,8 +5,14 @@ all: ; @go build httpdiff.go
 # https://medium.com/@kelseyhightower/optimizing-docker-images-for-static-binaries-b5696e26eb07
 static: ; @GOPATH=~ CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -tags netgo -ldflags '-w' httpdiff.go
 
+.PHONY: builder
+builder: ; @./make builder
+
+.PHONY: runtime
+runtime: builder ; @./make runtime
+
 .PHONY: install
 install: ; @go install ./...
 
 .PHONY: clean
-clean: ; @rm httpdiff
+clean: ; @./make clean
