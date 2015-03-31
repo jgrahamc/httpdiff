@@ -12,7 +12,7 @@ go install github.com/jgrahamc/httpdiff
 
 # Usage
 
-Simple usage is two give it two URLs to fetch and it will diff the results. If
+Simple usage is to give it two URLs to fetch and it will diff the results. If
 the bodies are different they are saved to temporary files.
 
     httpdiff http://www.google.co.uk http://www.google.com/
