@@ -18,6 +18,8 @@ import (
 // Set to true to prevent colour output
 var mono = false
 
+var notsame = false
+
 var client = &http.Client{}
 
 // ANSI escape functions and print helpers
@@ -37,18 +39,20 @@ func green(s string) string {
 	return fmt.Sprintf("\x1b[32m%s\x1b[0m", s)
 }
 func vs(a, b string, f string, v ...interface{}) bool {
-	if a != b {
+	notsame = a != b
+	if notsame {
 		s := fmt.Sprintf(f, v...)
 		fmt.Printf("%s\n    %s\n    %s\n", s, on(0, a), on(1, b))
 	}
-	return a != b
+	return notsame
 }
 func vsi(a, b int, f string, v ...interface{}) bool {
-	if a != b {
+	notsame = a != b
+	if notsame {
 		s := fmt.Sprintf(f, v...)
 		fmt.Printf("%s\n    %s\n    %s\n", s, oni(0, a), oni(1, b))
 	}
-	return a != b
+	return notsame
 }
 
 // do an HTTP request to a server and returns the response object and the
@@ -93,12 +97,12 @@ func main() {
 	if *help {
 		fmt.Fprintf(os.Stderr, "httpdiff [options] url1 url2\n")
 		flag.PrintDefaults()
-		return
+		os.Exit(2)
 	}
 
 	if len(flag.Args()) != 2 {
 		fmt.Printf("Must specify two URLs to test\n")
-		return
+		os.Exit(2)
 	}
 
 	exclude := make(map[string]bool)
@@ -141,7 +145,7 @@ func main() {
 	}
 
 	if quit {
-		return
+		os.Exit(2)
 	}
 
 	vsi(resp[0].StatusCode, resp[1].StatusCode, "Different status code: ")
@@ -225,5 +229,11 @@ func main() {
 			}
 			fmt.Printf("%s\n", out)
 		}
+	}
+
+	if notsame {
+		os.Exit(1)
+	} else {
+		os.Exit(0)
 	}
 }
