@@ -5,6 +5,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -91,6 +92,7 @@ func main() {
 	flag.BoolVar(&mono, "mono", false, "Monochrome output")
 	ua := flag.String("agent", "httpdiff/0.1", "Sets User-Agent")
 	help := flag.Bool("help", false, "Print usage")
+	insecure := flag.Bool("insecure", false, "Allow connection to HTTPS sites without certs")
 	diffapp := flag.String("diffapp", "", "The diff application to call when response bodies are different")
 	flag.Parse()
 
@@ -120,6 +122,13 @@ func main() {
 	}
 	vs(flag.Arg(0), flag.Arg(1)+" ", "Doing %s: ", green(*method))
 
+	if *insecure {
+		client = &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}
+	}
 	var wg sync.WaitGroup
 	var resp [2]*http.Response
 	var body [2][]byte
