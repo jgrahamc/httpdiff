@@ -59,8 +59,15 @@ func vsi(a, b int, f string, v ...interface{}) bool {
 // do an HTTP request to a server and returns the response object and the
 // complete response body. There's no need to close the response body as this
 // will have been done.
-func do(method, host, ua, uri string) (*http.Response, []byte, error) {
-	req, err := http.NewRequest(method, uri, nil)
+func do(method, req_body, host, ua, uri string) (*http.Response, []byte, error) {
+	var err error
+	var req *http.Request
+	if strings.EqualFold("POST", method) || strings.EqualFold("PUT", method) {
+            req, err = http.NewRequest(method, uri, strings.NewReader(req_body))
+	} else {
+            req, err = http.NewRequest(method, uri, nil)
+	}
+
 	if err != nil {
 		return nil, nil, err
 	}
@@ -85,6 +92,7 @@ func do(method, host, ua, uri string) (*http.Response, []byte, error) {
 
 func main() {
 	method := flag.String("method", "GET", "Sets the HTTP method")
+	req_body := flag.String("body", "", "Sets body data to send server")
 	host := flag.String("host", "",
 		"Sets the Host header sent with both requests")
 	ignore := flag.String("ignore", "",
@@ -137,7 +145,7 @@ func main() {
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go func(i int) {
-			resp[i], body[i], err[i] = do(*method, *host, *ua, flag.Arg(i))
+			resp[i], body[i], err[i] = do(*method, *req_body, *host, *ua, flag.Arg(i))
 			wg.Done()
 		}(i)
 	}
