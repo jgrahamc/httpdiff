@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/tls"
 	"flag"
@@ -59,13 +60,13 @@ func vsi(a, b int, f string, v ...interface{}) bool {
 // do an HTTP request to a server and returns the response object and the
 // complete response body. There's no need to close the response body as this
 // will have been done.
-func do(method, req_body, host, ua, uri string) (*http.Response, []byte, error) {
+func do(method, req_body, host, ua, uri string, extraHeaders map[string]string) (*http.Response, []byte, error) {
 	var err error
 	var req *http.Request
 	if strings.EqualFold("POST", method) || strings.EqualFold("PUT", method) {
-            req, err = http.NewRequest(method, uri, strings.NewReader(req_body))
+		req, err = http.NewRequest(method, uri, strings.NewReader(req_body))
 	} else {
-            req, err = http.NewRequest(method, uri, nil)
+		req, err = http.NewRequest(method, uri, nil)
 	}
 
 	if err != nil {
@@ -76,6 +77,9 @@ func do(method, req_body, host, ua, uri string) (*http.Response, []byte, error) 
 	}
 	if ua != "" {
 		req.Header["User-Agent"] = []string{ua}
+	}
+	for k, v := range extraHeaders {
+		req.Header.Add(k, v)
 	}
 
 	resp, err := transport.RoundTrip(req)
@@ -90,6 +94,16 @@ func do(method, req_body, host, ua, uri string) (*http.Response, []byte, error) 
 	return resp, body, err
 }
 
+func parseHeader(hdr string, m map[string]string) {
+	parts := strings.SplitN(hdr, ":", 2)
+	if len(parts) != 2 {
+		fmt.Fprintf(os.Stderr, "Bad header %s\n", hdr)
+		os.Exit(2)
+	}
+
+	m[http.CanonicalHeaderKey(strings.TrimSpace(parts[0]))] = strings.TrimSpace(parts[1])
+}
+
 func main() {
 	method := flag.String("method", "GET", "Sets the HTTP method")
 	req_body := flag.String("body", "", "Sets body data to send server")
@@ -102,6 +116,8 @@ func main() {
 	help := flag.Bool("help", false, "Print usage")
 	insecure := flag.Bool("insecure", false, "Allow connection to HTTPS sites without certs")
 	diffapp := flag.String("diffapp", "", "The diff application to call when response bodies are different")
+	header := flag.String("header", "", "Single HTTP header to add to request")
+	headers := flag.String("headers", "", "File containing HTTP headers (one per line) to add to request")
 	flag.Parse()
 
 	if *help {
@@ -113,6 +129,32 @@ func main() {
 	if len(flag.Args()) != 2 {
 		fmt.Printf("Must specify two URLs to test\n")
 		os.Exit(2)
+	}
+
+	extraHeaders := make(map[string]string)
+
+	if *header != "" {
+		parseHeader(*header, extraHeaders)
+	}
+
+	if *headers != "" {
+		file, err := os.Open(*headers)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error opening file %s: %s\n", *headers, err)
+			os.Exit(2)
+		}
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			parseHeader(scanner.Text(), extraHeaders)
+		}
+
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintf(os.Stderr, "Error reading file %s: %s\n", *headers, err)
+			os.Exit(2)
+		}
+
+		file.Close()
 	}
 
 	exclude := make(map[string]bool)
@@ -141,7 +183,7 @@ func main() {
 	for i := 0; i < 2; i++ {
 		wg.Add(1)
 		go func(i int) {
-			resp[i], body[i], err[i] = do(*method, *req_body, *host, *ua, flag.Arg(i))
+			resp[i], body[i], err[i] = do(*method, *req_body, *host, *ua, flag.Arg(i), extraHeaders)
 			wg.Done()
 		}(i)
 	}
