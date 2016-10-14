@@ -21,7 +21,7 @@ var mono = false
 
 var notsame = false
 
-var client = &http.Client{}
+var transport = &http.Transport{}
 
 // ANSI escape functions and print helpers
 func on(i int, s string) string {
@@ -78,7 +78,7 @@ func do(method, req_body, host, ua, uri string) (*http.Response, []byte, error) 
 		req.Header["User-Agent"] = []string{ua}
 	}
 
-	resp, err := client.Do(req)
+	resp, err := transport.RoundTrip(req)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -131,11 +131,7 @@ func main() {
 	vs(flag.Arg(0), flag.Arg(1)+" ", "Doing %s: ", green(*method))
 
 	if *insecure {
-		client = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		}
+		transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 	var wg sync.WaitGroup
 	var resp [2]*http.Response
