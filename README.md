@@ -7,7 +7,7 @@ best results use in a terminal that supports ANSI escape sequences.
 
 ```
 go get github.com/jgrahamc/httpdiff
-go install github.com/jgrahamc/httpdiff
+go install github.com/jgrahamc/httpdiff@latest
 ```
 
 # Usage
